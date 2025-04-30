@@ -6,8 +6,12 @@ import com.tanay.vistora.model.DatabaseTable;
 import org.springframework.stereotype.Service;
 
 import javax.lang.model.element.Modifier;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 @Service
 public class ModelGeneratorService
@@ -16,10 +20,11 @@ public class ModelGeneratorService
     private static final Map<String, ClassName> JPA_ANNOTATIONS = new HashMap<>();
     private static final String PERSISTENCE = "javax.persistence";
     private static final String DEFAULT_PACKAGE = "com.tanay.vistora.generated";
+    private static final String DEFAULT_OUTPUT_ROOT = "src/main/java/com/tanay/vistora/generated";
 
     static
     {
-        // Type mappings
+        // Initialize type mappings
         TYPE_MAPPING.put("VARCHAR", ClassName.get(String.class));
         TYPE_MAPPING.put("CHAR", ClassName.get(String.class));
         TYPE_MAPPING.put("TEXT", ClassName.get(String.class));
@@ -38,12 +43,11 @@ public class ModelGeneratorService
         TYPE_MAPPING.put("TIME", ClassName.get(java.time.LocalTime.class));
         TYPE_MAPPING.put("BOOLEAN", ClassName.get(Boolean.class));
         TYPE_MAPPING.put("BIT", ClassName.get(Boolean.class));
-
         TYPE_MAPPING.put("BLOB", ArrayTypeName.of(byte.class));
         TYPE_MAPPING.put("LONGBLOB", ArrayTypeName.of(byte.class));
         TYPE_MAPPING.put("JSON", ClassName.get(String.class));
 
-        // JPA Annotations
+        // Initialize JPA annotations
         JPA_ANNOTATIONS.put("Entity", ClassName.get(PERSISTENCE, "Entity"));
         JPA_ANNOTATIONS.put("Table", ClassName.get(PERSISTENCE, "Table"));
         JPA_ANNOTATIONS.put("Id", ClassName.get(PERSISTENCE, "Id"));
@@ -52,135 +56,57 @@ public class ModelGeneratorService
         JPA_ANNOTATIONS.put("ManyToOne", ClassName.get(PERSISTENCE, "ManyToOne"));
         JPA_ANNOTATIONS.put("OneToMany", ClassName.get(PERSISTENCE, "OneToMany"));
         JPA_ANNOTATIONS.put("JoinColumn", ClassName.get(PERSISTENCE, "JoinColumn"));
+        JPA_ANNOTATIONS.put("Lob", ClassName.get(PERSISTENCE, "Lob"));
     }
 
     public String generateModelClass(DatabaseTable table)
     {
-        String className = toCamelCase(table.getName(), true);
-        TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-                .addModifiers(Modifier.PUBLIC);
-
-        // Add JPA Entity annotation
-        classBuilder.addAnnotation(JPA_ANNOTATIONS.get("Entity"));
-
-        // Add Table annotation
-        AnnotationSpec tableAnnotation = AnnotationSpec.builder(JPA_ANNOTATIONS.get("Table"))
-                .addMember("name", "$S", table.getName())
-                .build();
-        classBuilder.addAnnotation(tableAnnotation);
-
-        for (DatabaseColumn column : table.getColumns())
-        {
-            String fieldName = toCamelCase(column.getName(), false);
-            TypeName fieldType = TYPE_MAPPING.getOrDefault(column.getType().toUpperCase(), ClassName.get(String.class));
-
-            FieldSpec.Builder fieldBuilder = FieldSpec.builder(fieldType, fieldName)
-                    .addModifiers(Modifier.PRIVATE);
-
-            // Add Column annotation
-            AnnotationSpec.Builder columnAnnotation = AnnotationSpec.builder(JPA_ANNOTATIONS.get("Column"))
-                    .addMember("name", "$S", column.getName());
-
-            if (!column.isNullable())
-                columnAnnotation.addMember("nullable", "$L", false);
-
-            if (column.getSize() > 0 && !column.getType().equalsIgnoreCase("TEXT"))
-                columnAnnotation.addMember("length", "$L", column.getSize());
-
-            fieldBuilder.addAnnotation(columnAnnotation.build());
-
-            // Add Id annotation for primary keys
-            if (table.getPrimaryKeys().contains(column.getName()))
-            {
-                fieldBuilder.addAnnotation(JPA_ANNOTATIONS.get("Id"));
-                if (column.isAutoIncrement())
-                {
-                    fieldBuilder.addAnnotation(AnnotationSpec.builder(JPA_ANNOTATIONS.get("GeneratedValue"))
-                            .addMember("strategy", "$T.IDENTITY",
-                                    ClassName.get(PERSISTENCE, "GenerationType"))
-                            .build());
-                }
-            }
-            // Add field to class
-            classBuilder.addField(fieldBuilder.build());
-
-            // Generate getter
-            MethodSpec getter = MethodSpec.methodBuilder("get" + toCamelCase(column.getName(), true))
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(fieldType)
-                    .addStatement("return this.$N", fieldName)
-                    .build();
-            classBuilder.addMethod(getter);
-
-            // Generate setter
-            MethodSpec setter = MethodSpec.methodBuilder("set" + toCamelCase(column.getName(), true))
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(fieldType, fieldName)
-                    .addStatement("this.$N = $N", fieldName, fieldName)
-                    .build();
-            classBuilder.addMethod(setter);
-        }
-
-        // Generate toString()
-        MethodSpec toString = MethodSpec.methodBuilder("toString")
-                .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .returns(String.class)
-                .addStatement("return $S + $L + $S", className + "{", buildToStringFields(table), "}")
-                .build();
-        classBuilder.addMethod(toString);
-
-        // Generate the class
-        TypeSpec modelClass = classBuilder.build();
-        JavaFile javaFile = JavaFile.builder("com.example.generated.models", modelClass)
-                .indent("    ")
-                .build();
-
-        return javaFile.toString();
+        return buildJavaFile(table, DEFAULT_PACKAGE).toString();
     }
 
-    private String buildToStringFields(DatabaseTable table)
+    private void writeModelToFile(JavaFile javaFile) throws IOException
     {
-        StringBuilder sb = new StringBuilder();
-        for (DatabaseColumn column : table.getColumns())
-        {
-            String fieldName = toCamelCase(column.getName(), false);
-            if (!sb.isEmpty())
-                sb.append(" + \", ");
-            else
-                sb.append("\"");
+        // Convert package to path (com.example -> com/example)
+        String packagePath = javaFile.packageName.replace('.', File.separatorChar);
 
-            sb.append(fieldName).append("='\" + ").append(fieldName).append(" + \"'");
-        }
-        return sb.toString();
+        // Create full output path
+        Path outputPath = Paths.get(DEFAULT_OUTPUT_ROOT, packagePath);
+
+        // Create directories if they don't exist
+        if (!Files.exists(outputPath))
+            Files.createDirectories(outputPath);
+
+        // Write the file
+        javaFile.writeTo(outputPath);
     }
 
-    private String toCamelCase(String input, boolean captalizeFirst)
+    public Map<String, String> generateAllModels(List<DatabaseTable> tables) throws IOException
     {
-        if (input == null || input.isEmpty())
-            return input;
+        Map<String, String> models = new LinkedHashMap<>();
+        Set<String> usedClassNames = new HashSet<>();
 
-        String[] parts = input.split("[_\\s]");
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < parts.length; i++)
+        for (DatabaseTable table : tables)
         {
-            String part = parts[i];
-            if (part.isEmpty())
-                continue;
-
-            if (i == 0 && !captalizeFirst)
-                result.append(part.toLowerCase());
-            else
-                result.append(Character.toUpperCase(part.charAt(0)))
-                        .append(part.substring(1).toLowerCase());
+            String className = getUniqueClassName(table.getName(), usedClassNames);
+            JavaFile javaFile = buildJavaFile(table, className);
+            models.put(table.getName(), javaFile.toString());
+            writeModelToFile(javaFile);
         }
-        return result.toString();
+        return models;
     }
 
-    private JavaFile buildJavaFile(DatabaseTable table)
+    private String getUniqueClassName(String originalName, Set<String> usedClassNames)
     {
-        return buildJavaFile(table, "com.example.generated.models");
+        String className = toCamelCase(originalName, true);
+        String baseClassName = className;
+        int counter = 1;
+
+        while (usedClassNames.contains(className))
+        {
+            className = baseClassName + counter++;
+        }
+        usedClassNames.add(className);
+        return className;
     }
 
     private JavaFile buildJavaFile(DatabaseTable table, String basePackage)
@@ -196,32 +122,14 @@ public class ModelGeneratorService
     private TypeSpec buildTypeSpec(DatabaseTable table, String className)
     {
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-                .addModifiers(Modifier.PUBLIC);
-
-        // Add JPA Entity annotation
-        classBuilder.addAnnotation(JPA_ANNOTATIONS.get("Entity"));
-
-        // Add Table annotation
-        classBuilder.addAnnotation(AnnotationSpec.builder(JPA_ANNOTATIONS.get("Table"))
-                .addMember("name", "$S", table.getName())
-                .build());
-
-        // Process columns
-        for (DatabaseColumn column : table.getColumns())
-        {
-            addColumnToClass(table, classBuilder, column);
-        }
-
-        // Generate toString()
-        classBuilder.addMethod(MethodSpec.methodBuilder("toString")
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .returns(String.class)
-                .addStatement("return $S + $L + $S",
-                        className + "{",
-                        buildToStringFields(table),
-                        "}")
-                .build());
+                .addAnnotation(JPA_ANNOTATIONS.get("Entity"))
+                .addAnnotation(AnnotationSpec.builder(JPA_ANNOTATIONS.get("Table"))
+                        .addMember("name", "$S", table.getName())
+                        .build());
+
+        table.getColumns().forEach(column -> addColumnToClass(table, classBuilder, column));
+        classBuilder.addMethod(buildToStringMethod(className, table));
 
         return classBuilder.build();
     }
@@ -233,24 +141,17 @@ public class ModelGeneratorService
                 ClassName.get(String.class));
 
         FieldSpec.Builder fieldBuilder = FieldSpec.builder(fieldType, fieldName)
-                .addModifiers(Modifier.PRIVATE);
+                .addModifiers(Modifier.PRIVATE)
+                .addAnnotation(buildColumnAnnotation(column));
 
-        // Add Column annotation
-        AnnotationSpec.Builder columnAnnotation = AnnotationSpec.builder(JPA_ANNOTATIONS.get("Column"))
-                .addMember("name", "$S", column.getName());
-
-        if (!column.isNullable())
+        // Add special annotations for certain types
+        if (column.getType().equalsIgnoreCase("BLOB") ||
+                column.getType().equalsIgnoreCase("LONGBLOB"))
         {
-            columnAnnotation.addMember("nullable", "$L", false);
-        }
-        if (column.getSize() > 0 && !column.getType().equalsIgnoreCase("TEXT"))
-        {
-            columnAnnotation.addMember("length", "$L", column.getSize());
+            fieldBuilder.addAnnotation(JPA_ANNOTATIONS.get("Lob"));
         }
 
-        fieldBuilder.addAnnotation(columnAnnotation.build());
-
-        // Add Id annotation for primary keys
+        // Handle primary keys
         if (table.getPrimaryKeys().contains(column.getName()))
         {
             fieldBuilder.addAnnotation(JPA_ANNOTATIONS.get("Id"));
@@ -262,21 +163,103 @@ public class ModelGeneratorService
                         .build());
             }
         }
-
         classBuilder.addField(fieldBuilder.build());
+        classBuilder.addMethod(buildGetterMethod(fieldName, fieldType));
+        classBuilder.addMethod(buildSetterMethod(fieldName, fieldType));
+    }
 
-        // Generate getter
-        classBuilder.addMethod(MethodSpec.methodBuilder("get" + toCamelCase(column.getName(), true))
+    private AnnotationSpec buildColumnAnnotation(DatabaseColumn column)
+    {
+        AnnotationSpec.Builder builder = AnnotationSpec.builder(JPA_ANNOTATIONS.get("Column"))
+                .addMember("name", "$S", column.getName());
+
+        if (!column.isNullable())
+        {
+            builder.addMember("nullable", "$L", false);
+        }
+
+        if (column.getSize() > 0 && !column.getType().equalsIgnoreCase("TEXT"))
+        {
+            builder.addMember("length", "$L", column.getSize());
+        }
+        return builder.build();
+    }
+
+    private MethodSpec buildGetterMethod(String fieldName, TypeName fieldType)
+    {
+        return MethodSpec.methodBuilder("get" + toCamelCase(fieldName, true))
                 .addModifiers(Modifier.PUBLIC)
                 .returns(fieldType)
                 .addStatement("return this.$N", fieldName)
-                .build());
+                .build();
+    }
 
-        // Generate setter
-        classBuilder.addMethod(MethodSpec.methodBuilder("set" + toCamelCase(column.getName(), true))
+    private MethodSpec buildSetterMethod(String fieldName, TypeName fieldType)
+    {
+        return MethodSpec.methodBuilder("set" + toCamelCase(fieldName, true))
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(fieldType, fieldName)
                 .addStatement("this.$N = $N", fieldName, fieldName)
-                .build());
+                .build();
+    }
+
+    private MethodSpec buildToStringMethod(String className, DatabaseTable table)
+    {
+        return MethodSpec.methodBuilder("toString")
+                .addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(String.class)
+                .addStatement("return $S + $L + $S",
+                        className + "{",
+                        buildToStringFields(table),
+                        "}")
+                .build();
+    }
+
+    private String buildToStringFields(DatabaseTable table)
+    {
+        StringBuilder sb = new StringBuilder();
+        table.getColumns().forEach(column ->
+        {
+            String fieldName = toCamelCase(column.getName(), false);
+            if (!sb.isEmpty())
+            {
+                sb.append(" + \", ");
+            }
+            else
+            {
+                sb.append("\"");
+            }
+            sb.append(fieldName).append("='\" + ").append(fieldName).append(" + \"'");
+        });
+        return sb.toString();
+    }
+
+    private String toCamelCase(String input, boolean capitalizeFirst)
+    {
+        if (input == null || input.isEmpty())
+        {
+            return input;
+        }
+
+        String[] parts = input.split("[_\\s]");
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < parts.length; i++)
+        {
+            String part = parts[i];
+            if (part.isEmpty()) continue;
+
+            if (i == 0 && !capitalizeFirst)
+            {
+                result.append(part.toLowerCase());
+            }
+            else
+            {
+                result.append(Character.toUpperCase(part.charAt(0)))
+                        .append(part.substring(1).toLowerCase());
+            }
+        }
+        return result.toString();
     }
 }

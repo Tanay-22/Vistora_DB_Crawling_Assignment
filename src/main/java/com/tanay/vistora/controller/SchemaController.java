@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -44,13 +45,10 @@ public class SchemaController
     }
 
     @GetMapping("/generate-models")
-    public Map<String, String> generateAllModels() throws SQLException
+    public Map<String, String> generateAllModels() throws SQLException, IOException
     {
-        return schemaService.extractDatabaseSchema().stream()
-                .collect(Collectors.toMap(
-                        DatabaseTable::getName,
-                        modelGeneratorService::generateModelClass
-                ));
+        List<DatabaseTable> tables = schemaService.extractDatabaseSchema();
+        return modelGeneratorService.generateAllModels(tables);
     }
 
     @GetMapping("/generate-model/{tableName}")
