@@ -1,8 +1,8 @@
 package com.tanay.vistora.service;
 
 import com.squareup.javapoet.*;
-import com.tanay.vistora.model.DatabaseColumn;
-import com.tanay.vistora.model.DatabaseTable;
+import com.tanay.vistora.metadata.DatabaseColumn;
+import com.tanay.vistora.metadata.DatabaseTable;
 import org.springframework.stereotype.Service;
 
 import javax.lang.model.element.Modifier;
@@ -18,7 +18,7 @@ public class ModelGeneratorService
 {
     private static final Map<String, TypeName> TYPE_MAPPING = new HashMap<>();
     private static final Map<String, ClassName> JPA_ANNOTATIONS = new HashMap<>();
-    private static final String PERSISTENCE = "javax.persistence";
+    private static final String PERSISTENCE = "jakarta.persistence";
     private static final String DEFAULT_PACKAGE = "com.tanay.vistora.generated";
     private static final String DEFAULT_OUTPUT_ROOT = "src/main/java/com/tanay/vistora/generated";
 
@@ -241,7 +241,6 @@ public class ModelGeneratorService
         {
             return input;
         }
-
         String[] parts = input.split("[_\\s]");
         StringBuilder result = new StringBuilder();
 

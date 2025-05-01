@@ -1,6 +1,6 @@
 package com.tanay.vistora.controller;
 
-import com.tanay.vistora.model.DatabaseTable;
+import com.tanay.vistora.metadata.DatabaseTable;
 import com.tanay.vistora.service.ModelGeneratorService;
 import com.tanay.vistora.service.SchemaService;
 import org.springframework.beans.factory.annotation.Autowired;

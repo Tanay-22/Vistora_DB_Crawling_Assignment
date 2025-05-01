@@ -1,4 +1,4 @@
-package com.tanay.vistora.model;
+package com.tanay.vistora.metadata;
 
 import lombok.Data;
 

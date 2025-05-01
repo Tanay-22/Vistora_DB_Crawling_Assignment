@@ -108,10 +108,17 @@ The application maps SQL data types to Java types automatically:
 The database connection is configured using properties with the `database` prefix:
 
 ```properties
-database.url=jdbc:mysql://localhost:3306/your_database
-database.username=yourUsername
-database.password=yourPassword
-database.schema=your_schema
+server:
+    port: 8080
+
+spring:
+    application:
+        name: ApplicationName
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/db_name
+        username: db_username
+        password: db_password
 ```
 
 ## Generated Models

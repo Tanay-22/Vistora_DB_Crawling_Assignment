@@ -1,8 +1,7 @@
 package com.tanay.vistora.service;
 
-import com.tanay.vistora.model.*;
+import com.tanay.vistora.metadata.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -14,13 +13,11 @@ import java.util.*;
 public class SchemaService
 {
     private final DataSource dataSource;
-    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public SchemaService(DataSource dataSource, JdbcTemplate jdbcTemplate)
+    public SchemaService(DataSource dataSource)
     {
         this.dataSource = dataSource;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<DatabaseTable> extractDatabaseSchema() throws SQLException
@@ -124,7 +121,6 @@ public class SchemaService
 
     private List<DatabaseIndex> getIndices(DatabaseMetaData metaData, String tableName) throws SQLException
     {
-        List<DatabaseIndex> indexes = new ArrayList<>();
         Map<String, DatabaseIndex> indexMap = new HashMap<>();
 
         // Define column name constants to avoid magic strings
@@ -193,7 +189,6 @@ public class SchemaService
                 }
             }
         }
-        indexes.addAll(indexMap.values());
-        return indexes;
+        return new ArrayList<>(indexMap.values());
     }
 }
