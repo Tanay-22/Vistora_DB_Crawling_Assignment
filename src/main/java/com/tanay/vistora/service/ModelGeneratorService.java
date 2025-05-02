@@ -124,6 +124,7 @@ public class ModelGeneratorService
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(JPA_ANNOTATIONS.get("Entity"))
+                .addAnnotation(ClassName.get("lombok", "Data"))
                 .addAnnotation(AnnotationSpec.builder(JPA_ANNOTATIONS.get("Table"))
                         .addMember("name", "$S", table.getName())
                         .build());
@@ -164,8 +165,8 @@ public class ModelGeneratorService
             }
         }
         classBuilder.addField(fieldBuilder.build());
-        classBuilder.addMethod(buildGetterMethod(fieldName, fieldType));
-        classBuilder.addMethod(buildSetterMethod(fieldName, fieldType));
+//        classBuilder.addMethod(buildGetterMethod(fieldName, fieldType));
+//        classBuilder.addMethod(buildSetterMethod(fieldName, fieldType));
     }
 
     private AnnotationSpec buildColumnAnnotation(DatabaseColumn column)
@@ -202,6 +203,7 @@ public class ModelGeneratorService
                 .addStatement("this.$N = $N", fieldName, fieldName)
                 .build();
     }
+    //  replace getter and setters with @lombok.Data
 
     private MethodSpec buildToStringMethod(String className, DatabaseTable table)
     {
