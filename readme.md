@@ -1,6 +1,6 @@
-# Vistora - Database Schema Analyzer
+# Database Schema Analyzer
 
-Vistora is a Spring Boot application that extracts database schema information and generates Java model classes with JPA annotations based on your database structure.
+A Spring Boot application that extracts database schema information and generates Java model classes with JPA annotations based on your database structure.
 
 ## Overview
 
