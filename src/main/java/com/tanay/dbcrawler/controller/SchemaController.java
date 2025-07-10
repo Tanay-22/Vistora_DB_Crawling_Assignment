@@ -1,9 +1,9 @@
-package com.tanay.vistora.controller;
+package com.tanay.dbcrawler.controller;
 
-import com.tanay.vistora.metadata.DatabaseTable;
-import com.tanay.vistora.service.ModelGeneratorService;
-import com.tanay.vistora.service.SchemaService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.tanay.dbcrawler.metadata.DatabaseTable;
+import com.tanay.dbcrawler.service.ModelGeneratorService;
+import com.tanay.dbcrawler.service.SchemaService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,17 +18,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/schema")
+@RequiredArgsConstructor
 public class SchemaController
 {
     private final SchemaService schemaService;
     private final ModelGeneratorService modelGeneratorService;
-
-    @Autowired
-    public SchemaController(SchemaService schemaService, ModelGeneratorService modelGeneratorService)
-    {
-        this.schemaService = schemaService;
-        this.modelGeneratorService = modelGeneratorService;
-    }
 
     @GetMapping("/tables")
     public ResponseEntity<List<DatabaseTable>> getAllTables() throws SQLException

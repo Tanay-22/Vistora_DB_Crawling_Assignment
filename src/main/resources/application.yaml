@@ -3,9 +3,9 @@ server:
 
 spring:
     application:
-        name: Vistora
+        name: DBCrawler
     datasource:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://localhost:3306/ecommerce
-        username: root
-        password: Mterstegen#1
+        url: ${DB_URL}
+        username: ${DB_USERNAME}
+        password: ${DB_PASSWORD}

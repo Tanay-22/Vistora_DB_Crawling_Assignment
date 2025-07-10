@@ -1,14 +1,13 @@
-package com.tanay.vistora;
+package com.tanay.dbcrawler;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class VistoraApplication
+public class DBCrawlerApplication
 {
     public static void main(String[] args)
     {
-        SpringApplication.run(VistoraApplication.class, args);
+        SpringApplication.run(DBCrawlerApplication.class, args);
     }
-
 }

@@ -1,4 +1,4 @@
-package com.tanay.vistora.metadata;
+package com.tanay.dbcrawler.metadata;
 
 import lombok.Data;
 

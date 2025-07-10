@@ -1,6 +1,7 @@
-package com.tanay.vistora.service;
+package com.tanay.dbcrawler.service;
 
-import com.tanay.vistora.metadata.*;
+import com.tanay.dbcrawler.metadata.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,15 +11,10 @@ import java.util.*;
 
 
 @Service
+@RequiredArgsConstructor
 public class SchemaService
 {
     private final DataSource dataSource;
-
-    @Autowired
-    public SchemaService(DataSource dataSource)
-    {
-        this.dataSource = dataSource;
-    }
 
     public List<DatabaseTable> extractDatabaseSchema() throws SQLException
     {

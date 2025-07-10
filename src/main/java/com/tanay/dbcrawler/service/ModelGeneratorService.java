@@ -1,8 +1,8 @@
-package com.tanay.vistora.service;
+package com.tanay.dbcrawler.service;
 
 import com.squareup.javapoet.*;
-import com.tanay.vistora.metadata.DatabaseColumn;
-import com.tanay.vistora.metadata.DatabaseTable;
+import com.tanay.dbcrawler.metadata.DatabaseColumn;
+import com.tanay.dbcrawler.metadata.DatabaseTable;
 import org.springframework.stereotype.Service;
 
 import javax.lang.model.element.Modifier;

@@ -1,10 +1,10 @@
-package com.tanay.vistora;
+package com.tanay.dbcrawler;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class VistoraApplicationTests
+class DBCrawlerApplicationTests
 {
 
     @Test
